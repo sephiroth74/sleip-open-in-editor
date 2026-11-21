@@ -13,7 +13,8 @@ long lines whole rather than cut at the window's width.
 - **Open Output in Editor** (`open-in-editor.output`), from the pane's
   context menu where a command's output is, or from the palette for the
   last command that ended: that command's output alone, as your shell
-  marks it, of the shell integration.
+  marks it, of the shell integration; of an output so long that its start
+  left the scrollback, from the oldest row that the pane holds.
 - The editor is the one that `[links] editor` names in Lokyr's config,
   such as `"vscode"` or `"zed"`; without one, the app that opens text files.
 - Each opening writes its file anew, `scrollback.txt` or `output.txt`, in a
@@ -22,7 +23,8 @@ long lines whole rather than cut at the window's width.
 - A row that wraps at the window's edge joins the next, so that a line of
   the program's opens as one line.
 - A text of more than 8 MB, or of more than 100,000 rows, opens its last
-  lines, and a notice tells how many.
+  lines, and a notice tells how many. A pane resized or closed while its
+  rows are read opens nothing, and a notice tells why.
 - Lokyr shows the commands' items in its menus whether or not they apply:
   of no command that ended at the cell, a notice says why nothing opened.
 
