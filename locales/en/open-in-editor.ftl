@@ -9,3 +9,5 @@ open-in-editor-empty = There is no text to open
 open-in-editor-not-written = The file was not written: { $error }
 # A text longer than the file holds opens its last lines.
 open-in-editor-cut = Only the last { $lines } lines open, as the rest did not fit
+# A read that the pane's change cut short opens nothing.
+open-in-editor-changed = The pane changed while its rows were read: nothing opened

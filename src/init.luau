@@ -27,7 +27,8 @@ type Reading = {
     cut: boolean,
 }
 
--- The reads under way, by their ids.
+-- The read under way, by its id: the last command's alone, so that a read
+-- of no event is forgotten as the next starts.
 local readings: { [number]: Reading } = {}
 
 -- The command that ended of `pane` whose output a command opens: of the
@@ -39,17 +40,14 @@ local function command_of(cx: Cx, pane: PaneId, args: Args): ShellCommand?
     if view == nil or view.alternate then
         return nil
     end
-    local ended = function(command: ShellCommand?): boolean
-        return command ~= nil and command.output ~= nil and command["end"] ~= nil
-    end
     local column, row = args.column, args.row
     if type(column) == "number" and column >= 0 and type(row) == "number" and row >= 0 then
         local command = cx.command_at(pane, row)
-        return if ended(command) then command else nil
+        return if text.ended(command) then command else nil
     end
     local commands = cx.shell_commands(pane, view.screen - RECENT_ROWS, view.screen + view.rows) or {}
     for at = #commands, 1, -1 do
-        if ended(commands[at]) then
+        if text.ended(commands[at]) then
             return commands[at]
         end
     end
@@ -62,6 +60,7 @@ end
 local function read(cx: Cx, pane: PaneId, first: number, count: number, file: string, row: number)
     local from = math.max(first, first + count - MOST_ROWS)
     local id = assert(cx.read_lines(pane, from, first + count - from))
+    table.clear(readings)
     readings[id] = { file = file, row = row, cut = from > first }
 end
 
@@ -105,9 +104,10 @@ function Plugin.on_command(cx: Cx, name: string, args: Args)
         -- asks a plugin of a thread of its own nothing before its menu
         -- shows: a notice tells why it opens nothing.
         local command = command_of(cx, pane, args)
+        local view = cx.viewport(pane)
         local first, count
-        if command ~= nil then
-            first, count = text.output(command)
+        if command ~= nil and view ~= nil then
+            first, count = text.output(command, view.oldest)
         end
         if first == nil then
             cx.notify(cx.message("open-in-editor-no-command") or "No command that ended is here", "info")
@@ -157,7 +157,14 @@ function Plugin.on_event(cx: Cx, events: { Event })
             local reading = readings[event.id]
             if reading ~= nil then
                 readings[event.id] = nil
-                open(cx, reading, event.lines)
+                if event.complete then
+                    open(cx, reading, event.lines)
+                else
+                    -- Cut short, as a resize renumbered the rows or the
+                    -- pane closed in the middle: nothing opens.
+                    local message = cx.message("open-in-editor-changed")
+                    cx.notify(message or "The pane changed while its rows were read: nothing opened", "info")
+                end
             end
         end
     end

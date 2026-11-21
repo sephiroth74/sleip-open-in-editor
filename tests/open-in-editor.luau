@@ -128,13 +128,42 @@ function test.a_file_past_its_bytes_keeps_its_last_lines_and_moves_its_line()
 end
 
 function test.an_output_s_rows_run_from_its_mark_to_its_end()
-    local first, count = text.output({ id = 1, output = { 0, 5 }, ["end"] = { 0, 9 } } :: any)
+    local first, count = text.output({ id = 1, output = { 0, 5 }, ["end"] = { 0, 9 } } :: any, 0)
     assert(first == 5 and count == 4)
     -- An end past its row's first column holds that row.
-    first, count = text.output({ id = 1, output = { 0, 5 }, ["end"] = { 3, 9 } } :: any)
+    first, count = text.output({ id = 1, output = { 0, 5 }, ["end"] = { 3, 9 } } :: any, 0)
     assert(first == 5 and count == 5)
-    first = text.output({ id = 1 } :: any)
+    first = text.output({ id = 1 } :: any, 0)
     assert(first == nil)
+    -- Of its marks before its end gone with the scrollback's oldest rows,
+    -- from the oldest row; of a prompt but no output's mark, none.
+    first, count = text.output({ id = 1, ["end"] = { 0, 9 } } :: any, 2)
+    assert(first == 2 and count == 7, `{first} {count}`)
+    first = text.output({ id = 1, prompt = { 0, 4 }, ["end"] = { 0, 9 } } :: any, 2)
+    assert(first == nil)
+end
+
+function test.a_long_output_whose_mark_left_the_scrollback_opens_from_its_oldest_row(host: TestHost)
+    host.activate()
+    host.set_screen({ row("line 19998"), row("line 19999"), row("line 20000"), row("$") })
+    host.set_commands({ { id = 1, ["end"] = { 0, 3 }, status = 0 } })
+    assert(host.applies("open-in-editor.output"))
+    host.command("open-in-editor.output")
+    host.events({})
+    local written = host.temporary_file("output.txt")
+    assert(written == "line 19998\nline 19999\nline 20000\n", written)
+end
+
+function test.a_read_cut_short_opens_nothing_and_tells_why(host: TestHost)
+    host.activate()
+    host.set_screen({ row("$ ls -l"), row("total 0"), row("$") })
+    host.command("open-in-editor.scrollback")
+    host.cut_reads()
+    host.events({})
+    assert(opened(host) == nil, "nothing opened")
+    assert(host.temporary_file("scrollback.txt") == nil)
+    local text = last_notice(host)
+    assert(text == "The pane changed while its rows were read: nothing opened", text)
 end
 
 return test

@@ -64,16 +64,26 @@ function text.file(lines: { string }, line: number, most: number): File
     }
 end
 
+-- Whether `command` ended of an output: its output's mark and its end's, or
+-- its end's alone of a command whose marks before it all left the
+-- scrollback, as a long output pushes them out.
+function text.ended(command: ShellCommand?): boolean
+    if command == nil or command["end"] == nil then
+        return false
+    end
+    return command.output ~= nil or (command.prompt == nil and command.input == nil)
+end
+
 -- The rows of `command`'s output, the first row's number and how many: from
--- its output's mark to its end's row, or the row before where its end is at
--- the row's first column; none of a command whose output or end its shell
--- did not mark.
-function text.output(command: ShellCommand): (number?, number)
-    local output, finished = command.output, command["end"]
-    if output == nil or finished == nil then
+-- its output's mark, or from `oldest`, the pane's oldest row, where it left
+-- the scrollback, to its end's row, or the row before where its end is at
+-- the row's first column; none of a command that did not end of an output.
+function text.output(command: ShellCommand, oldest: number): (number?, number)
+    if not text.ended(command) then
         return nil, 0
     end
-    local first = output[2]
+    local output, finished = command.output, command["end"] :: { number }
+    local first = if output ~= nil then output[2] else oldest
     local last = finished[2] - (if finished[1] == 0 then 1 else 0)
     return first, last - first + 1
 end

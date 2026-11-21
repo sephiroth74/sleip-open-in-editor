@@ -132,6 +132,7 @@ export type Cx = {
     set_group_color: (group: GroupId, color: Color?) -> (true?, string?, number?),
     fold_group: (group: GroupId, folded: boolean) -> (true?, string?, number?),
     ungroup: (group: GroupId) -> (true?, string?, number?),
+    set_status_bar_side: (side: StatusBarSide) -> (true?, string?, number?),
     set_tab_bar_place: (place: BarPlace) -> (true?, string?, number?),
     set_inactive_dim: (dim: number) -> (true?, string?, number?),
     set_focus_follows_mouse: (on: boolean) -> (true?, string?, number?),
@@ -328,6 +329,15 @@ export type TestHost = {
     -- its request's name in snake case, as `{ notify = { ... } }` or
     -- `{ open_at = { ... } }`.
     done: () -> { { [string]: any } },
+    -- The reads that its calls made since the last look, of those that its
+    -- capabilities allow, each a table of its request's name in snake case,
+    -- as `{ git_branch = { ... } }` or `{ tabs = 1 }`, or the name alone of
+    -- a request of nothing more, in kebab case, as `focused-pane`.
+    reads: () -> { { [string]: any } | string },
+    -- Cuts short the reads of rows that it asked for and has yet to hear
+    -- of, as a resize or the pane's closing does: their `lines` events, at
+    -- the next delivery, tell them incomplete.
+    cut_reads: () -> (),
     -- The names of the commands that it registered.
     commands: () -> { string },
     -- The clipboard's text.
@@ -362,6 +372,12 @@ export type TestHost = {
     -- The bytes of the plugin's temporary file `name`, as it wrote them
     -- last, if it did.
     temporary_file: (name: string) -> string?,
+    -- Gives the pane the folder of its program, as a read of its working
+    -- directory gives it, or none.
+    set_directory: (folder: string?) -> (),
+    -- The side of the status bar where its view goes: its manifest's, or
+    -- the one that it asked for last.
+    status_bar_side: () -> StatusBarSide,
     -- Makes the folder of the absolute path `folder` a git repository's of
     -- the branch `branch`, or no repository's of none, which a read of the
     -- branch of a folder within it gives.
@@ -980,6 +996,11 @@ export type ShellCommand = {
 export type Side =
     | "first"
     | "second"
+
+export type StatusBarSide =
+    | "start"
+    | "center"
+    | "end"
 
 export type Style = {
     background: Token?,
