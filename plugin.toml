@@ -1,0 +1,29 @@
+[plugin]
+name = "sephiroth74/open-in-editor"
+version = "0.1.0"
+kind = "luau"
+api = "^0.1.6"
+license = "MIT"
+description = "A pane's scrollback, or a command's output, in your text editor, its long lines whole, to search, copy or keep"
+repository = "https://github.com/sephiroth74/sleip-open-in-editor"
+keywords = ["editor", "scrollback", "output", "vscode"]
+authors = ["Alessandro Crugnola"]
+
+# It activates at the start, as its item of the pane's context menu shows
+# before any of its commands runs.
+[activation]
+on = ["startup"]
+
+# The texts of a pane's rows, the commands that the shell marked, whose
+# output a command opens, and the file opened in the editor at its line;
+# the file is a temporary one of the plugin's own, of no capability.
+[capabilities]
+terminal-read = true
+history-read = true
+open = true
+
+[contributes]
+commands = [
+    { name = "open-in-editor.scrollback", title = "Open Scrollback in Editor", category = "edit" },
+    { name = "open-in-editor.output", title = "Open Output in Editor", category = "edit" },
+]
